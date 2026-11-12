@@ -34,7 +34,7 @@ curl -s "localhost:8080/api/recommendations?productIds=1&limit=3" -H "Authorizat
 Arborescence du dépôt :
 
 ```
-bdd/                 schema base de données.pdf, script.sql (DDL + données), schema.dot (source du schéma)
+bdd/                 schema base de données.pdf, script.sql (DDL + données)
 couverture/          backend/ (rapport JaCoCo)
 src/main/java/...    code source (voir §1.2)
 src/test/java/...    tests unitaires, intégration, API, non-régression
