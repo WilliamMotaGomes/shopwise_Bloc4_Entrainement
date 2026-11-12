@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JwtService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.security</a> &gt; <span class="el_source">JwtService.java</span></div><h1>JwtService.java</h1><pre class="source lang-java linenums">package com.shopwise.app.security;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JwtService {
+	private final JwtEncoder encoder;
+	private final Clock clock;
+	private final long ttlSeconds;
+
+<span class="fc" id="L21">	public JwtService(JwtEncoder encoder, Clock clock, @Value(&quot;${shopwise.security.jwt.ttl-seconds}&quot;) long ttlSeconds) {</span>
+<span class="fc" id="L22">		this.encoder = encoder;</span>
+<span class="fc" id="L23">		this.clock = clock;</span>
+<span class="fc" id="L24">		this.ttlSeconds = ttlSeconds;</span>
+<span class="fc" id="L25">	}</span>
+
+	public String issue(String username, List&lt;String&gt; roles) {
+<span class="fc" id="L28">		Instant now = clock.instant();</span>
+<span class="fc" id="L29">		JwtClaimsSet claims = JwtClaimsSet.builder().issuer(&quot;shopwise&quot;).subject(username).issuedAt(now)</span>
+<span class="fc" id="L30">				.expiresAt(now.plusSeconds(ttlSeconds)).claim(JwtConfig.ROLES_CLAIM, roles).build();</span>
+<span class="fc" id="L31">		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();</span>
+<span class="fc" id="L32">		return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();</span>
+	}
+
+	public long getTtlSeconds() {
+<span class="fc" id="L36">		return ttlSeconds;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

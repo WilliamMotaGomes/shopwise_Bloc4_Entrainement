@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SaleServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.service</a> &gt; <span class="el_source">SaleServiceImpl.java</span></div><h1>SaleServiceImpl.java</h1><pre class="source lang-java linenums">package com.shopwise.app.service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.shopwise.app.dto.request.CreateSaleRequest;
+import com.shopwise.app.dto.request.SaleItemRequest;
+import com.shopwise.app.dto.response.SaleResponse;
+import com.shopwise.app.dto.response.SaleSummaryResponse;
+import com.shopwise.app.entity.Product;
+import com.shopwise.app.entity.Sale;
+import com.shopwise.app.entity.SaleItem;
+import com.shopwise.app.exception.BadRequestException;
+import com.shopwise.app.exception.NotFoundException;
+import com.shopwise.app.mapper.SaleMapper;
+import com.shopwise.app.repository.ProductRepository;
+import com.shopwise.app.repository.SaleRepository;
+
+@Service
+public class SaleServiceImpl implements SaleService {
+	private final SaleRepository saleRepository;
+	private final ProductRepository productRepository;
+	private final SaleMapper saleMapper;
+	private final Clock clock;
+
+	public SaleServiceImpl(SaleRepository saleRepository, ProductRepository productRepository, SaleMapper saleMapper,
+<span class="fc" id="L37">			Clock clock) {</span>
+<span class="fc" id="L38">		this.saleRepository = saleRepository;</span>
+<span class="fc" id="L39">		this.productRepository = productRepository;</span>
+<span class="fc" id="L40">		this.saleMapper = saleMapper;</span>
+<span class="fc" id="L41">		this.clock = clock;</span>
+<span class="fc" id="L42">	}</span>
+
+	@Override
+	@Transactional
+	public SaleResponse create(CreateSaleRequest request) {
+<span class="fc" id="L47">		Map&lt;Long, Integer&gt; quantityByProduct = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		for (SaleItemRequest item : request.items()) {</span>
+<span class="fc" id="L49">			quantityByProduct.merge(item.productId(), item.quantity(), Integer::sum);</span>
+<span class="fc" id="L50">		}</span>
+
+<span class="fc" id="L52">		Map&lt;Long, Product&gt; products = productRepository.findAllById(quantityByProduct.keySet()).stream()</span>
+<span class="fc" id="L53">				.collect(Collectors.toMap(Product::getId, Function.identity()));</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		List&lt;Long&gt; unknown = quantityByProduct.keySet().stream().filter(id -&gt; !products.containsKey(id)).toList();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		if (!unknown.isEmpty()) {</span>
+<span class="fc" id="L56">			throw new BadRequestException(&quot;Unknown product id(s): &quot; + unknown);</span>
+		}
+
+<span class="fc" id="L59">		Sale sale = new Sale();</span>
+<span class="fc" id="L60">		sale.setSaleDate(LocalDateTime.now(clock));</span>
+<span class="fc" id="L61">		BigDecimal total = BigDecimal.ZERO;</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		for (Map.Entry&lt;Long, Integer&gt; entry : quantityByProduct.entrySet()) {</span>
+<span class="fc" id="L63">			Product product = products.get(entry.getKey());</span>
+<span class="fc" id="L64">			BigDecimal unitPrice = product.getPrice().setScale(2, RoundingMode.HALF_UP);</span>
+<span class="fc" id="L65">			BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(entry.getValue()));</span>
+
+<span class="fc" id="L67">			SaleItem line = new SaleItem();</span>
+<span class="fc" id="L68">			line.setProduct(product);</span>
+<span class="fc" id="L69">			line.setQuantity(entry.getValue());</span>
+<span class="fc" id="L70">			line.setUnitPrice(unitPrice);</span>
+<span class="fc" id="L71">			line.setLineTotal(lineTotal);</span>
+<span class="fc" id="L72">			sale.addItem(line);</span>
+<span class="fc" id="L73">			total = total.add(lineTotal);</span>
+<span class="fc" id="L74">		}</span>
+<span class="fc" id="L75">		sale.setTotalAmount(total);</span>
+
+<span class="fc" id="L77">		return saleMapper.toResponse(saleRepository.save(sale));</span>
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List&lt;SaleSummaryResponse&gt; getAll() {
+<span class="fc" id="L83">		return saleRepository.findAllByOrderBySaleDateDescIdDesc().stream().map(saleMapper::toSummary).toList();</span>
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public SaleResponse getById(Long id) {
+<span class="fc" id="L89">		Sale sale = saleRepository.findDetailById(id)</span>
+<span class="fc" id="L90">				.orElseThrow(() -&gt; new NotFoundException(&quot;Sale not found with id &quot; + id));</span>
+<span class="fc" id="L91">		return saleMapper.toResponse(sale);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

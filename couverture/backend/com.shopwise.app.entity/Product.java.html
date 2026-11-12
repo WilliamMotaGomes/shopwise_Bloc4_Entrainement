@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Product.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.entity</a> &gt; <span class="el_source">Product.java</span></div><h1>Product.java</h1><pre class="source lang-java linenums">package com.shopwise.app.entity;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = &quot;PRODUCTS&quot;)
+public class Product {
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(nullable = false, length = 100)
+	private String name;
+
+	@Column(length = 500)
+	private String description;
+
+	@Column(nullable = false, precision = 10, scale = 2)
+	private BigDecimal price;
+
+	@CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+	public Long getId() {
+<span class="fc" id="L39">		return id;</span>
+	}
+
+	public void setId(Long id) {
+<span class="fc" id="L43">		this.id = id;</span>
+<span class="fc" id="L44">	}</span>
+
+	public String getName() {
+<span class="fc" id="L47">		return name;</span>
+	}
+
+	public void setName(String name) {
+<span class="fc" id="L51">		this.name = name;</span>
+<span class="fc" id="L52">	}</span>
+
+	public String getDescription() {
+<span class="fc" id="L55">		return description;</span>
+	}
+
+	public void setDescription(String description) {
+<span class="fc" id="L59">		this.description = description;</span>
+<span class="fc" id="L60">	}</span>
+
+	public BigDecimal getPrice() {
+<span class="fc" id="L63">		return price;</span>
+	}
+
+	public void setPrice(BigDecimal price) {
+<span class="fc" id="L67">		this.price = price;</span>
+<span class="fc" id="L68">	}</span>
+
+	public LocalDateTime getCreatedAt() {
+<span class="fc" id="L71">		return createdAt;</span>
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+<span class="nc" id="L75">		this.createdAt = createdAt;</span>
+<span class="nc" id="L76">	}</span>
+
+	public LocalDateTime getUpdatedAt() {
+<span class="fc" id="L79">		return updatedAt;</span>
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+<span class="nc" id="L83">		this.updatedAt = updatedAt;</span>
+<span class="nc" id="L84">	}</span>
+
+<span class="fc" id="L86">    public Product() {	}</span>
+
+	public Product(Long id, String name, String description, BigDecimal price, LocalDateTime createdAt,
+			LocalDateTime updatedAt) {
+<span class="nc" id="L90">		super();</span>
+<span class="nc" id="L91">		this.id = id;</span>
+<span class="nc" id="L92">		this.name = name;</span>
+<span class="nc" id="L93">		this.description = description;</span>
+<span class="nc" id="L94">		this.price = price;</span>
+<span class="nc" id="L95">		this.createdAt = createdAt;</span>
+<span class="nc" id="L96">		this.updatedAt = updatedAt;</span>
+<span class="nc" id="L97">	}</span>
+
+	@Override
+	public String toString() {
+<span class="nc" id="L101">		return &quot;Product [id=&quot; + id + &quot;, name=&quot; + name + &quot;, description=&quot; + description + &quot;, price=&quot; + price</span>
+				+ &quot;, createdAt=&quot; + createdAt + &quot;, updatedAt=&quot; + updatedAt + &quot;]&quot;;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

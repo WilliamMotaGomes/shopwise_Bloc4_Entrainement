@@ -1,0 +1,8 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SHOPWISE_JWT_SECRET: "${SHOPWISE_JWT_SECRET:-change-me-with-at-least-32-characters-secret}"
+      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-demo}"

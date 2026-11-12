@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TextVectorizer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.recommendation.engine</a> &gt; <span class="el_source">TextVectorizer.java</span></div><h1>TextVectorizer.java</h1><pre class="source lang-java linenums">package com.shopwise.app.recommendation.engine;
+
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+final class TextVectorizer {
+<span class="fc" id="L12">	private static final Set&lt;String&gt; STOP_WORDS = Set.of(&quot;le&quot;, &quot;la&quot;, &quot;les&quot;, &quot;un&quot;, &quot;une&quot;, &quot;des&quot;, &quot;du&quot;, &quot;de&quot;, &quot;et&quot;, &quot;ou&quot;,</span>
+			&quot;pour&quot;, &quot;avec&quot;, &quot;sans&quot;, &quot;sur&quot;, &quot;dans&quot;, &quot;the&quot;, &quot;a&quot;, &quot;an&quot;, &quot;and&quot;, &quot;or&quot;, &quot;for&quot;, &quot;with&quot;, &quot;of&quot;, &quot;to&quot;, &quot;in&quot;, &quot;on&quot;,
+			&quot;latest&quot;, &quot;new&quot;);
+
+	private TextVectorizer() {
+	}
+
+	static List&lt;String&gt; tokenize(String text) {
+<span class="fc bfc" id="L20" title="All 4 branches covered.">		if (text == null || text.isBlank()) {</span>
+<span class="fc" id="L21">			return List.of();</span>
+		}
+<span class="fc" id="L23">		String normalized = Normalizer.normalize(text.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)</span>
+<span class="fc" id="L24">				.replaceAll(&quot;\\p{M}+&quot;, &quot;&quot;);</span>
+<span class="fc" id="L25">		List&lt;String&gt; tokens = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">		for (String token : normalized.split(&quot;[^a-z0-9]+&quot;)) {</span>
+<span class="fc bfc" id="L27" title="All 4 branches covered.">			if (token.length() &gt;= 2 &amp;&amp; !STOP_WORDS.contains(token)) {</span>
+<span class="fc" id="L28">				tokens.add(token);</span>
+			}
+		}
+<span class="fc" id="L31">		return tokens;</span>
+	}
+
+	static List&lt;Map&lt;String, Double&gt;&gt; tfIdf(List&lt;List&lt;String&gt;&gt; documents) {
+<span class="fc" id="L35">		int n = documents.size();</span>
+<span class="fc" id="L36">		Map&lt;String, Integer&gt; documentFrequency = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">		for (List&lt;String&gt; doc : documents) {</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">			for (String term : Set.copyOf(doc)) {</span>
+<span class="fc" id="L39">				documentFrequency.merge(term, 1, Integer::sum);</span>
+<span class="fc" id="L40">			}</span>
+<span class="fc" id="L41">		}</span>
+<span class="fc" id="L42">		List&lt;Map&lt;String, Double&gt;&gt; vectors = new ArrayList&lt;&gt;(n);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">		for (List&lt;String&gt; doc : documents) {</span>
+<span class="fc" id="L44">			Map&lt;String, Double&gt; vector = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L45">			Map&lt;String, Integer&gt; termFrequency = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">			for (String term : doc) {</span>
+<span class="fc" id="L47">				termFrequency.merge(term, 1, Integer::sum);</span>
+<span class="fc" id="L48">			}</span>
+<span class="fc" id="L49">			double norm = 0;</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">			for (Map.Entry&lt;String, Integer&gt; e : termFrequency.entrySet()) {</span>
+<span class="fc" id="L51">				double idf = Math.log((1.0 + n) / (1.0 + documentFrequency.get(e.getKey()))) + 1.0;</span>
+<span class="fc" id="L52">				double weight = e.getValue() * idf;</span>
+<span class="fc" id="L53">				vector.put(e.getKey(), weight);</span>
+<span class="fc" id="L54">				norm += weight * weight;</span>
+<span class="fc" id="L55">			}</span>
+<span class="fc" id="L56">			norm = Math.sqrt(norm);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			if (norm &gt; 0) {</span>
+<span class="fc" id="L58">				final double divisor = norm;</span>
+<span class="fc" id="L59">				vector.replaceAll((k, v) -&gt; v / divisor);</span>
+			}
+<span class="fc" id="L61">			vectors.add(vector);</span>
+<span class="fc" id="L62">		}</span>
+<span class="fc" id="L63">		return vectors;</span>
+	}
+
+	static double dot(Map&lt;String, Double&gt; a, Map&lt;String, Double&gt; b) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		Map&lt;String, Double&gt; small = a.size() &lt;= b.size() ? a : b;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		Map&lt;String, Double&gt; large = small == a ? b : a;</span>
+<span class="fc" id="L69">		double sum = 0;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		for (Map.Entry&lt;String, Double&gt; e : small.entrySet()) {</span>
+<span class="fc" id="L71">			Double other = large.get(e.getKey());</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">			if (other != null) {</span>
+<span class="fc" id="L73">				sum += e.getValue() * other;</span>
+			}
+<span class="fc" id="L75">		}</span>
+<span class="fc" id="L76">		return sum;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

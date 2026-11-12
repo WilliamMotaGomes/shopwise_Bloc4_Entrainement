@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HybridModelTrainer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.recommendation.engine</a> &gt; <span class="el_source">HybridModelTrainer.java</span></div><h1>HybridModelTrainer.java</h1><pre class="source lang-java linenums">package com.shopwise.app.recommendation.engine;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+import com.shopwise.app.recommendation.domain.Basket;
+import com.shopwise.app.recommendation.domain.CatalogItem;
+import com.shopwise.app.recommendation.domain.RecommendationModel;
+import com.shopwise.app.recommendation.domain.RecommendationModelTrainer;
+
+public class HybridModelTrainer implements RecommendationModelTrainer {
+	private final HybridConfig config;
+
+<span class="fc" id="L21">	public HybridModelTrainer(HybridConfig config) {</span>
+<span class="fc" id="L22">		this.config = config;</span>
+<span class="fc" id="L23">	}</span>
+
+	@Override
+	public RecommendationModel train(List&lt;CatalogItem&gt; catalog, List&lt;Basket&gt; baskets, Instant now) {
+<span class="fc" id="L27">		List&lt;Basket&gt; cleaned = keepKnownProducts(catalog, baskets);</span>
+
+<span class="fc" id="L29">		double weight = config.defaultCollaborativeWeight();</span>
+<span class="fc" id="L30">		boolean tuned = false;</span>
+<span class="fc" id="L31">		Double hitRate = null;</span>
+<span class="fc" id="L32">		int split = (int) Math.floor(cleaned.size() * (1.0 - config.validationRatio()));</span>
+<span class="fc" id="L33">		List&lt;Basket&gt; trainPart = cleaned.subList(0, split);</span>
+<span class="fc" id="L34">		List&lt;Basket&gt; validationPart = cleaned.subList(split, cleaned.size()).stream()</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">				.filter(b -&gt; b.productIds().size() &gt;= 2).toList();</span>
+<span class="pc bpc" id="L36" title="1 of 4 branches missed.">		if (validationPart.size() &gt;= config.minValidationBaskets() &amp;&amp; !trainPart.isEmpty()) {</span>
+<span class="fc" id="L37">			HybridModel candidate = build(catalog, trainPart, config.defaultCollaborativeWeight(), now);</span>
+<span class="fc" id="L38">			double best = -1;</span>
+<span class="fc" id="L39">			double bestWeight = weight;</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">			for (int step = 0; step &lt;= 10; step++) {</span>
+<span class="fc" id="L41">				double w = step / 10.0;</span>
+<span class="fc" id="L42">				double rate = hitRate(candidate.withWeight(w, false, null, trainPart.size(), now), validationPart);</span>
+
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">				if (rate &gt; best + 1e-12 || (Math.abs(rate - best) &lt;= 1e-12</span>
+<span class="fc" id="L45">						&amp;&amp; Math.abs(w - config.defaultCollaborativeWeight()) &lt; Math</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">								.abs(bestWeight - config.defaultCollaborativeWeight()))) {</span>
+<span class="fc" id="L47">					best = rate;</span>
+<span class="fc" id="L48">					bestWeight = w;</span>
+				}
+			}
+<span class="fc" id="L51">			weight = bestWeight;</span>
+<span class="fc" id="L52">			hitRate = best;</span>
+<span class="fc" id="L53">			tuned = true;</span>
+		}
+
+<span class="fc" id="L56">		HybridModel full = build(catalog, cleaned, weight, now);</span>
+<span class="fc" id="L57">		return full.withWeight(weight, tuned, hitRate, cleaned.size(), now);</span>
+	}
+
+	private List&lt;Basket&gt; keepKnownProducts(List&lt;CatalogItem&gt; catalog, List&lt;Basket&gt; baskets) {
+<span class="fc" id="L61">		Set&lt;Long&gt; known = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L62">		catalog.forEach(c -&gt; known.add(c.id()));</span>
+<span class="fc" id="L63">		List&lt;Basket&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		for (Basket b : baskets) {</span>
+<span class="fc" id="L65">			Map&lt;Long, Integer&gt; q = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L66">			b.quantities().forEach((id, qty) -&gt; {</span>
+<span class="pc bpc" id="L67" title="2 of 6 branches missed.">				if (known.contains(id) &amp;&amp; qty != null &amp;&amp; qty &gt; 0) {</span>
+<span class="fc" id="L68">					q.put(id, qty);</span>
+				}
+<span class="fc" id="L70">			});</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			if (!q.isEmpty()) {</span>
+<span class="fc" id="L72">				result.add(new Basket(b.saleId(), q));</span>
+			}
+<span class="fc" id="L74">		}</span>
+<span class="fc" id="L75">		return result;</span>
+	}
+
+	double hitRate(HybridModel model, List&lt;Basket&gt; validation) {
+<span class="fc" id="L79">		int hits = 0;</span>
+<span class="fc" id="L80">		int evaluated = 0;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">		for (int b = 0; b &lt; validation.size(); b++) {</span>
+<span class="fc" id="L82">			List&lt;Long&gt; items = new ArrayList&lt;&gt;(new TreeSet&lt;&gt;(validation.get(b).productIds()));</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">			if (items.size() &lt; 2) {</span>
+<span class="nc" id="L84">				continue;</span>
+			}
+<span class="fc" id="L86">			Long heldOut = items.get(b % items.size());</span>
+<span class="fc" id="L87">			List&lt;Long&gt; seeds = new ArrayList&lt;&gt;(items);</span>
+<span class="fc" id="L88">			seeds.remove(heldOut);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">			boolean hit = model.recommend(seeds, config.topK()).stream().anyMatch(p -&gt; p.productId() == heldOut);</span>
+<span class="fc" id="L90">			evaluated++;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">			if (hit) {</span>
+<span class="fc" id="L92">				hits++;</span>
+			}
+		}
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		return evaluated == 0 ? 0.0 : (double) hits / evaluated;</span>
+	}
+
+	private HybridModel build(List&lt;CatalogItem&gt; catalog, List&lt;Basket&gt; baskets, double weight, Instant now) {
+<span class="fc" id="L99">		int n = catalog.size();</span>
+<span class="fc" id="L100">		long[] ids = new long[n];</span>
+<span class="fc" id="L101">		Map&lt;Long, Integer&gt; index = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L103">			ids[i] = catalog.get(i).id();</span>
+<span class="fc" id="L104">			index.put(ids[i], i);</span>
+		}
+
+<span class="fc" id="L107">		int[] purchaseCount = new int[n];</span>
+<span class="fc" id="L108">		double[] popularity = new double[n];</span>
+<span class="fc" id="L109">		int[][] co = new int[n][n];</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		for (Basket basket : baskets) {</span>
+<span class="fc" id="L111">			List&lt;Integer&gt; idx = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			for (Map.Entry&lt;Long, Integer&gt; e : basket.quantities().entrySet()) {</span>
+<span class="fc" id="L113">				int i = index.get(e.getKey());</span>
+<span class="fc" id="L114">				idx.add(i);</span>
+<span class="fc" id="L115">				purchaseCount[i]++;</span>
+<span class="fc" id="L116">				popularity[i] += e.getValue();</span>
+<span class="fc" id="L117">			}</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">			for (int a = 0; a &lt; idx.size(); a++) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				for (int b = a + 1; b &lt; idx.size(); b++) {</span>
+<span class="fc" id="L120">					co[idx.get(a)][idx.get(b)]++;</span>
+<span class="fc" id="L121">					co[idx.get(b)][idx.get(a)]++;</span>
+				}
+			}
+<span class="fc" id="L124">		}</span>
+<span class="fc" id="L125">		double[][] collaborative = new double[n][n];</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">			for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">				if (i != j &amp;&amp; co[i][j] &gt; 0) {</span>
+<span class="fc" id="L129">					collaborative[i][j] = co[i][j] / Math.sqrt((double) purchaseCount[i] * purchaseCount[j]);</span>
+				}
+			}
+		}
+
+<span class="fc" id="L134">		List&lt;List&lt;String&gt;&gt; docs = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		for (CatalogItem item : catalog) {</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">			docs.add(TextVectorizer.tokenize(item.name() + &quot; &quot; + (item.description() == null ? &quot;&quot; : item.description())));</span>
+<span class="fc" id="L137">		}</span>
+<span class="fc" id="L138">		List&lt;Map&lt;String, Double&gt;&gt; vectors = TextVectorizer.tfIdf(docs);</span>
+<span class="fc" id="L139">		double[][] content = new double[n][n];</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">			for (int j = i + 1; j &lt; n; j++) {</span>
+<span class="fc" id="L142">				double text = TextVectorizer.dot(vectors.get(i), vectors.get(j));</span>
+<span class="fc" id="L143">				double price = priceProximity(catalog.get(i).price(), catalog.get(j).price());</span>
+<span class="fc" id="L144">				double sim = config.contentTextWeight() * text + (1.0 - config.contentTextWeight()) * price;</span>
+<span class="fc" id="L145">				content[i][j] = sim;</span>
+<span class="fc" id="L146">				content[j][i] = sim;</span>
+			}
+		}
+<span class="fc" id="L149">		return new HybridModel(ids, collaborative, content, purchaseCount, popularity, weight, baskets.size(), now,</span>
+				false, null);
+	}
+
+	static double priceProximity(BigDecimal p1, BigDecimal p2) {
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">		if (p1 == null || p2 == null) {</span>
+<span class="fc" id="L155">			return 0.0;</span>
+		}
+<span class="fc" id="L157">		double a = p1.doubleValue();</span>
+<span class="fc" id="L158">		double b = p2.doubleValue();</span>
+<span class="fc" id="L159">		double max = Math.max(a, b);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		return max &lt;= 0 ? 0.0 : 1.0 - Math.abs(a - b) / max;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

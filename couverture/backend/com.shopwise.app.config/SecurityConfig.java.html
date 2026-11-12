@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.config</a> &gt; <span class="el_source">SecurityConfig.java</span></div><h1>SecurityConfig.java</h1><pre class="source lang-java linenums">package com.shopwise.app.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+import com.shopwise.app.security.ApiRole;
+import com.shopwise.app.security.RestAccessDeniedHandler;
+import com.shopwise.app.security.RestAuthenticationEntryPoint;
+
+@Configuration
+@EnableWebSecurity
+<span class="fc" id="L18">public class SecurityConfig {</span>
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtConverter,
+			RestAuthenticationEntryPoint entryPoint, RestAccessDeniedHandler accessDeniedHandler) throws Exception {
+<span class="fc" id="L22">		http.csrf(csrf -&gt; csrf.disable())</span>
+<span class="fc" id="L23">				.sessionManagement(s -&gt; s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))</span>
+<span class="fc" id="L24">				.authorizeHttpRequests(auth -&gt; auth</span>
+<span class="fc" id="L25">						.requestMatchers(HttpMethod.POST, &quot;/api/auth/login&quot;).permitAll()</span>
+<span class="fc" id="L26">						.requestMatchers(HttpMethod.GET, &quot;/api/products&quot;, &quot;/api/products/**&quot;).authenticated()</span>
+<span class="fc" id="L27">						.requestMatchers(HttpMethod.POST, &quot;/api/products&quot;).hasAnyRole(ApiRole.ADMIN, ApiRole.MERCHANT)</span>
+<span class="fc" id="L28">						.requestMatchers(HttpMethod.PUT, &quot;/api/products/**&quot;)</span>
+<span class="fc" id="L29">						.hasAnyRole(ApiRole.ADMIN, ApiRole.MERCHANT)</span>
+<span class="fc" id="L30">						.requestMatchers(HttpMethod.DELETE, &quot;/api/products/**&quot;).hasRole(ApiRole.ADMIN)</span>
+<span class="fc" id="L31">						.requestMatchers(&quot;/api/sales&quot;, &quot;/api/sales/**&quot;).hasAnyRole(ApiRole.ADMIN, ApiRole.MERCHANT)</span>
+<span class="fc" id="L32">						.requestMatchers(HttpMethod.POST, &quot;/api/recommendations/retrain&quot;).hasRole(ApiRole.ADMIN)</span>
+<span class="fc" id="L33">						.requestMatchers(&quot;/api/recommendations&quot;, &quot;/api/recommendations/**&quot;)</span>
+<span class="fc" id="L34">						.hasAnyRole(ApiRole.ADMIN, ApiRole.MERCHANT)</span>
+<span class="fc" id="L35">						.anyRequest().authenticated())</span>
+<span class="fc" id="L36">				.oauth2ResourceServer(oauth -&gt; oauth.jwt(jwt -&gt; jwt.jwtAuthenticationConverter(jwtConverter))</span>
+<span class="fc" id="L37">						.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDeniedHandler))</span>
+<span class="fc" id="L38">				.exceptionHandling(ex -&gt; ex.authenticationEntryPoint(entryPoint).accessDeniedHandler(accessDeniedHandler));</span>
+<span class="fc" id="L39">		return http.build();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

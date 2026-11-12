@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HybridModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.recommendation.engine</a> &gt; <span class="el_source">HybridModel.java</span></div><h1>HybridModel.java</h1><pre class="source lang-java linenums">package com.shopwise.app.recommendation.engine;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.shopwise.app.recommendation.domain.ModelInfo;
+import com.shopwise.app.recommendation.domain.RecommendationModel;
+import com.shopwise.app.recommendation.domain.RecommendationReason;
+import com.shopwise.app.recommendation.domain.ScoredProduct;
+
+public final class HybridModel implements RecommendationModel {
+	static final String ALGORITHM = &quot;hybrid-item-knn (cosine co-purchase + TF-IDF content)&quot;;
+
+	private final long[] ids;
+	private final Map&lt;Long, Integer&gt; indexById;
+	private final double[][] collaborative;
+	private final double[][] content;
+	private final int[] purchaseCount;
+	private final double[] popularity;
+	private final double collaborativeWeight;
+	private final int basketCount;
+	private final Instant trainedAt;
+	private final boolean tuned;
+	private final Double validationHitRate;
+
+	HybridModel(long[] ids, double[][] collaborative, double[][] content, int[] purchaseCount, double[] popularity,
+<span class="fc" id="L34">			double collaborativeWeight, int basketCount, Instant trainedAt, boolean tuned, Double validationHitRate) {</span>
+<span class="fc" id="L35">		this.ids = ids;</span>
+<span class="fc" id="L36">		this.collaborative = collaborative;</span>
+<span class="fc" id="L37">		this.content = content;</span>
+<span class="fc" id="L38">		this.purchaseCount = purchaseCount;</span>
+<span class="fc" id="L39">		this.popularity = popularity;</span>
+<span class="fc" id="L40">		this.collaborativeWeight = collaborativeWeight;</span>
+<span class="fc" id="L41">		this.basketCount = basketCount;</span>
+<span class="fc" id="L42">		this.trainedAt = trainedAt;</span>
+<span class="fc" id="L43">		this.tuned = tuned;</span>
+<span class="fc" id="L44">		this.validationHitRate = validationHitRate;</span>
+<span class="fc" id="L45">		Map&lt;Long, Integer&gt; index = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">		for (int i = 0; i &lt; ids.length; i++) {</span>
+<span class="fc" id="L47">			index.put(ids[i], i);</span>
+		}
+<span class="fc" id="L49">		this.indexById = Map.copyOf(index);</span>
+<span class="fc" id="L50">	}</span>
+
+	HybridModel withWeight(double weight, boolean tuned, Double hitRate, int basketCount, Instant trainedAt) {
+<span class="fc" id="L53">		return new HybridModel(ids, collaborative, content, purchaseCount, popularity, weight, basketCount, trainedAt,</span>
+				tuned, hitRate);
+	}
+
+	@Override
+	public boolean knows(long productId) {
+<span class="fc" id="L59">		return indexById.containsKey(productId);</span>
+	}
+
+	double similarity(int a, int b) {
+<span class="fc bfc" id="L63" title="All 4 branches covered.">		double w = (purchaseCount[a] &gt; 0 &amp;&amp; purchaseCount[b] &gt; 0) ? collaborativeWeight : 0.0;</span>
+<span class="fc" id="L64">		return w * collaborative[a][b] + (1.0 - w) * content[a][b];</span>
+	}
+
+	@Override
+	public List&lt;ScoredProduct&gt; recommend(Collection&lt;Long&gt; seedProductIds, int limit) {
+<span class="fc" id="L69">		Set&lt;Integer&gt; seeds = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		for (Long id : seedProductIds) {</span>
+<span class="fc" id="L71">			Integer idx = indexById.get(id);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">			if (idx != null) {</span>
+<span class="fc" id="L73">				seeds.add(idx);</span>
+			}
+<span class="fc" id="L75">		}</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (limit &lt;= 0) {</span>
+<span class="fc" id="L77">			return List.of();</span>
+		}
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (seeds.isEmpty()) {</span>
+<span class="fc" id="L80">			return bestSellers(limit);</span>
+		}
+<span class="fc" id="L82">		List&lt;ScoredProduct&gt; scored = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (int j = 0; j &lt; ids.length; j++) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (seeds.contains(j)) {</span>
+<span class="fc" id="L85">				continue;</span>
+			}
+<span class="fc" id="L87">			double sum = 0;</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">			for (int s : seeds) {</span>
+<span class="fc" id="L89">				sum += similarity(s, j);</span>
+<span class="fc" id="L90">			}</span>
+<span class="fc" id="L91">			scored.add(new ScoredProduct(ids[j], sum / seeds.size(), RecommendationReason.SIMILAR_TO_BASKET));</span>
+		}
+<span class="fc" id="L93">		final double[] pop = popularity;</span>
+<span class="fc" id="L94">		final Map&lt;Long, Integer&gt; index = indexById;</span>
+<span class="fc" id="L95">		scored.sort(Comparator.comparingDouble(ScoredProduct::score).reversed()</span>
+<span class="fc" id="L96">				.thenComparing(Comparator.comparingDouble((ScoredProduct p) -&gt; pop[index.get(p.productId())]).reversed())</span>
+<span class="fc" id="L97">				.thenComparingLong(ScoredProduct::productId));</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		return scored.size() &gt; limit ? List.copyOf(scored.subList(0, limit)) : List.copyOf(scored);</span>
+	}
+
+	private List&lt;ScoredProduct&gt; bestSellers(int limit) {
+<span class="fc" id="L102">		double max = 0;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		for (double p : popularity) {</span>
+<span class="fc" id="L104">			max = Math.max(max, p);</span>
+		}
+<span class="fc" id="L106">		final double maxPopularity = max;</span>
+<span class="fc" id="L107">		List&lt;ScoredProduct&gt; all = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		for (int i = 0; i &lt; ids.length; i++) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">			all.add(new ScoredProduct(ids[i], maxPopularity &gt; 0 ? popularity[i] / maxPopularity : 0.0,</span>
+					RecommendationReason.BEST_SELLER));
+		}
+<span class="fc" id="L112">		all.sort(Comparator.comparingDouble(ScoredProduct::score).reversed()</span>
+<span class="fc" id="L113">				.thenComparingLong(ScoredProduct::productId));</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">		return all.size() &gt; limit ? List.copyOf(all.subList(0, limit)) : List.copyOf(all);</span>
+	}
+
+	@Override
+	public ModelInfo info() {
+<span class="fc" id="L119">		return new ModelInfo(ALGORITHM, trainedAt, ids.length, basketCount, collaborativeWeight, tuned,</span>
+				validationHitRate);
+	}
+
+	long[] ids() {
+<span class="nc" id="L124">		return ids;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

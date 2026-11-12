@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductMapperImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.mapper</a> &gt; <span class="el_source">ProductMapperImpl.java</span></div><h1>ProductMapperImpl.java</h1><pre class="source lang-java linenums">package com.shopwise.app.mapper;
+
+import com.shopwise.app.dto.request.CreateProductRequest;
+import com.shopwise.app.dto.request.UpdateProductRequest;
+import com.shopwise.app.dto.response.ProductResponse;
+import com.shopwise.app.entity.Product;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.processing.Generated;
+import org.springframework.stereotype.Component;
+
+@Generated(
+    value = &quot;org.mapstruct.ap.MappingProcessor&quot;,
+    date = &quot;2026-10-22T14:41:49+0200&quot;,
+    comments = &quot;version: 1.5.5.Final, compiler: javac, environment: Java 21.0.12.1 (Eclipse Adoptium)&quot;
+)
+@Component
+<span class="fc" id="L18">public class ProductMapperImpl implements ProductMapper {</span>
+
+    @Override
+    public Product toEntity(CreateProductRequest dto) {
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if ( dto == null ) {</span>
+<span class="nc" id="L23">            return null;</span>
+        }
+
+<span class="fc" id="L26">        Product product = new Product();</span>
+
+<span class="fc" id="L28">        product.setName( dto.getName() );</span>
+<span class="fc" id="L29">        product.setDescription( dto.getDescription() );</span>
+<span class="fc" id="L30">        product.setPrice( dto.getPrice() );</span>
+
+<span class="fc" id="L32">        return product;</span>
+    }
+
+    @Override
+    public void updateEntity(UpdateProductRequest dto, Product entity) {
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if ( dto == null ) {</span>
+<span class="nc" id="L38">            return;</span>
+        }
+
+<span class="fc" id="L41">        entity.setName( dto.getName() );</span>
+<span class="fc" id="L42">        entity.setDescription( dto.getDescription() );</span>
+<span class="fc" id="L43">        entity.setPrice( dto.getPrice() );</span>
+<span class="fc" id="L44">    }</span>
+
+    @Override
+    public ProductResponse toResponse(Product product) {
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if ( product == null ) {</span>
+<span class="nc" id="L49">            return null;</span>
+        }
+
+<span class="fc" id="L52">        ProductResponse productResponse = new ProductResponse();</span>
+
+<span class="fc" id="L54">        productResponse.setId( product.getId() );</span>
+<span class="fc" id="L55">        productResponse.setName( product.getName() );</span>
+<span class="fc" id="L56">        productResponse.setDescription( product.getDescription() );</span>
+<span class="fc" id="L57">        productResponse.setPrice( product.getPrice() );</span>
+<span class="fc" id="L58">        productResponse.setCreatedAt( product.getCreatedAt() );</span>
+<span class="fc" id="L59">        productResponse.setUpdatedAt( product.getUpdatedAt() );</span>
+
+<span class="fc" id="L61">        return productResponse;</span>
+    }
+
+    @Override
+    public List&lt;ProductResponse&gt; toResponseList(List&lt;Product&gt; products) {
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if ( products == null ) {</span>
+<span class="nc" id="L67">            return null;</span>
+        }
+
+<span class="fc" id="L70">        List&lt;ProductResponse&gt; list = new ArrayList&lt;ProductResponse&gt;( products.size() );</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for ( Product product : products ) {</span>
+<span class="fc" id="L72">            list.add( toResponse( product ) );</span>
+<span class="fc" id="L73">        }</span>
+
+<span class="fc" id="L75">        return list;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

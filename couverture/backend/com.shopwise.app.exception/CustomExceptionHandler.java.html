@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.exception</a> &gt; <span class="el_source">CustomExceptionHandler.java</span></div><h1>CustomExceptionHandler.java</h1><pre class="source lang-java linenums">package com.shopwise.app.exception;
+
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
+
+import com.shopwise.app.dto.response.ErrorResponse;
+import com.shopwise.app.dto.response.ErrorResponse.FieldViolation;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@RestControllerAdvice
+<span class="fc" id="L29">public class CustomExceptionHandler {</span>
+<span class="fc" id="L30">	private static final Logger log = LoggerFactory.getLogger(CustomExceptionHandler.class);</span>
+
+	@ExceptionHandler(NotFoundException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleNotFound(NotFoundException ex, HttpServletRequest req) {
+<span class="fc" id="L34">		return build(HttpStatus.NOT_FOUND, &quot;NOT_FOUND&quot;, ex.getMessage(), req);</span>
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleNoResource(NoResourceFoundException ex, HttpServletRequest req) {
+<span class="fc" id="L39">		return build(HttpStatus.NOT_FOUND, &quot;NOT_FOUND&quot;, &quot;No endpoint &quot; + req.getMethod() + &quot; &quot; + req.getRequestURI(),</span>
+				req);
+	}
+
+	@ExceptionHandler(BadRequestException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleBadRequest(BadRequestException ex, HttpServletRequest req) {
+<span class="fc" id="L45">		return build(HttpStatus.BAD_REQUEST, &quot;BAD_REQUEST&quot;, ex.getMessage(), req);</span>
+	}
+
+	@ExceptionHandler(ConflictException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleConflict(ConflictException ex, HttpServletRequest req) {
+<span class="fc" id="L50">		return build(HttpStatus.CONFLICT, &quot;CONFLICT&quot;, ex.getMessage(), req);</span>
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleValidation(MethodArgumentNotValidException ex,
+			HttpServletRequest req) {
+<span class="fc" id="L56">		List&lt;FieldViolation&gt; details = ex.getBindingResult().getAllErrors().stream()</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">				.map(e -&gt; new FieldViolation(e instanceof FieldError fe ? fe.getField() : e.getObjectName(),</span>
+<span class="fc" id="L58">						e.getDefaultMessage()))</span>
+<span class="fc" id="L59">				.toList();</span>
+<span class="fc" id="L60">		return ResponseEntity.badRequest().body(</span>
+<span class="fc" id="L61">				ErrorResponse.of(400, &quot;VALIDATION_ERROR&quot;, &quot;Request validation failed&quot;, req.getRequestURI(), details));</span>
+	}
+
+	@ExceptionHandler(HandlerMethodValidationException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleMethodValidation(HandlerMethodValidationException ex,
+			HttpServletRequest req) {
+<span class="nc" id="L67">		return build(HttpStatus.BAD_REQUEST, &quot;VALIDATION_ERROR&quot;, &quot;Invalid request parameter&quot;, req);</span>
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleUnreadable(HttpMessageNotReadableException ex,
+			HttpServletRequest req) {
+<span class="fc" id="L73">		return build(HttpStatus.BAD_REQUEST, &quot;MALFORMED_REQUEST&quot;, &quot;Request body is missing or malformed JSON&quot;, req);</span>
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+			HttpServletRequest req) {
+<span class="fc" id="L79">		return build(HttpStatus.BAD_REQUEST, &quot;BAD_REQUEST&quot;, &quot;Invalid value for parameter '&quot; + ex.getName() + &quot;'&quot;,</span>
+				req);
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleMissingParam(MissingServletRequestParameterException ex,
+			HttpServletRequest req) {
+<span class="nc" id="L86">		return build(HttpStatus.BAD_REQUEST, &quot;BAD_REQUEST&quot;, &quot;Missing parameter '&quot; + ex.getParameterName() + &quot;'&quot;, req);</span>
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleMethodNotSupported(HttpRequestMethodNotSupportedException ex,
+			HttpServletRequest req) {
+<span class="fc" id="L92">		return build(HttpStatus.METHOD_NOT_ALLOWED, &quot;METHOD_NOT_ALLOWED&quot;,</span>
+<span class="fc" id="L93">				&quot;Method &quot; + ex.getMethod() + &quot; is not supported on this endpoint&quot;, req);</span>
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleMediaType(HttpMediaTypeNotSupportedException ex,
+			HttpServletRequest req) {
+<span class="nc" id="L99">		return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, &quot;UNSUPPORTED_MEDIA_TYPE&quot;,</span>
+				&quot;Content type is not supported, use application/json&quot;, req);
+	}
+
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleAuthentication(AuthenticationException ex, HttpServletRequest req) {
+<span class="fc" id="L105">		return build(HttpStatus.UNAUTHORIZED, &quot;UNAUTHORIZED&quot;, &quot;Invalid credentials or missing authentication&quot;, req);</span>
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
+<span class="nc" id="L110">		return build(HttpStatus.FORBIDDEN, &quot;FORBIDDEN&quot;, &quot;You do not have the required role to perform this action&quot;,</span>
+				req);
+	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity&lt;ErrorResponse&gt; handleAll(Exception ex, HttpServletRequest req) {
+<span class="nc" id="L116">		log.error(&quot;Unexpected error&quot;, ex);</span>
+<span class="nc" id="L117">		return build(HttpStatus.INTERNAL_SERVER_ERROR, &quot;INTERNAL_ERROR&quot;, &quot;An unexpected error occurred&quot;, req);</span>
+	}
+
+	private ResponseEntity&lt;ErrorResponse&gt; build(HttpStatus status, String error, String message,
+			HttpServletRequest req) {
+<span class="fc" id="L122">		return ResponseEntity.status(status)</span>
+<span class="fc" id="L123">				.body(ErrorResponse.of(status.value(), error, message, req.getRequestURI()));</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserStoreConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.security</a> &gt; <span class="el_source">UserStoreConfig.java</span></div><h1>UserStoreConfig.java</h1><pre class="source lang-java linenums">package com.shopwise.app.security;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
+@Configuration
+<span class="fc" id="L13">public class UserStoreConfig {</span>
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+<span class="fc" id="L16">		return new BCryptPasswordEncoder();</span>
+	}
+
+	@Bean
+	public UserDetailsService userDetailsService(PasswordEncoder encoder,
+			@Value(&quot;${shopwise.security.users.admin.password}&quot;) String adminPassword,
+			@Value(&quot;${shopwise.security.users.merchant.password}&quot;) String merchantPassword,
+			@Value(&quot;${shopwise.security.users.clerk.password}&quot;) String clerkPassword) {
+<span class="fc" id="L24">		return new InMemoryUserDetailsManager(</span>
+<span class="fc" id="L25">				User.withUsername(&quot;admin&quot;).password(encoder.encode(adminPassword)).roles(ApiRole.ADMIN).build(),</span>
+<span class="fc" id="L26">				User.withUsername(&quot;marie&quot;).password(encoder.encode(merchantPassword)).roles(ApiRole.MERCHANT).build(),</span>
+<span class="fc" id="L27">				User.withUsername(&quot;clerk&quot;).password(encoder.encode(clerkPassword)).roles(ApiRole.USER).build());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">app</a> &gt; <a href="index.source.html" class="el_package">com.shopwise.app.service</a> &gt; <span class="el_source">ProductServiceImpl.java</span></div><h1>ProductServiceImpl.java</h1><pre class="source lang-java linenums">package com.shopwise.app.service;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.shopwise.app.dto.request.CreateProductRequest;
+import com.shopwise.app.dto.request.UpdateProductRequest;
+import com.shopwise.app.dto.response.ProductResponse;
+import com.shopwise.app.entity.Product;
+import com.shopwise.app.exception.ConflictException;
+import com.shopwise.app.exception.NotFoundException;
+import com.shopwise.app.mapper.ProductMapper;
+import com.shopwise.app.repository.ProductRepository;
+import com.shopwise.app.repository.SaleItemRepository;
+
+import jakarta.transaction.Transactional;
+
+@Service
+@Transactional
+public class ProductServiceImpl implements ProductService {
+	private final ProductRepository productRepository;
+	private final ProductMapper productMapper;
+	private final SaleItemRepository saleItemRepository;
+
+	public ProductServiceImpl(ProductRepository productRepository, ProductMapper productMapper,
+			SaleItemRepository saleItemRepository) {
+<span class="fc" id="L28">		super();</span>
+<span class="fc" id="L29">		this.productRepository = productRepository;</span>
+<span class="fc" id="L30">		this.productMapper = productMapper;</span>
+<span class="fc" id="L31">		this.saleItemRepository = saleItemRepository;</span>
+<span class="fc" id="L32">	}</span>
+
+    public ProductResponse create(CreateProductRequest request) {
+<span class="fc" id="L35">        Product product = productMapper.toEntity(request);</span>
+<span class="fc" id="L36">        Product saved = productRepository.save(product);</span>
+<span class="fc" id="L37">        return productMapper.toResponse(saved);</span>
+    }
+
+    public ProductResponse getById(Long id) {
+<span class="fc" id="L41">        Product product = productRepository.findById(id)</span>
+<span class="fc" id="L42">            .orElseThrow(() -&gt; new NotFoundException(&quot;Product not found&quot;));</span>
+<span class="fc" id="L43">        return productMapper.toResponse(product);</span>
+    }
+
+	public List&lt;ProductResponse&gt; getAll() {
+<span class="fc" id="L47">	    List&lt;Product&gt; products = productRepository.findAll();</span>
+<span class="fc" id="L48">	    return productMapper.toResponseList(products);</span>
+	}
+
+    public ProductResponse update(Long id, UpdateProductRequest request) {
+<span class="fc" id="L52">        Product product = productRepository.findById(id)</span>
+<span class="fc" id="L53">            .orElseThrow(() -&gt; new NotFoundException(&quot;Product not found&quot;));</span>
+
+<span class="fc" id="L55">        productMapper.updateEntity(request, product);</span>
+
+<span class="fc" id="L57">        Product updated = productRepository.save(product);</span>
+<span class="fc" id="L58">        return productMapper.toResponse(updated);</span>
+    }
+
+    public void delete(Long id) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (!productRepository.existsById(id)) {</span>
+<span class="fc" id="L63">            throw new NotFoundException(&quot;Product not found&quot;);</span>
+        }
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (saleItemRepository.existsByProductId(id)) {</span>
+<span class="fc" id="L67">            throw new ConflictException(&quot;Product is referenced by existing sales and cannot be deleted&quot;);</span>
+        }
+<span class="fc" id="L69">        productRepository.deleteById(id);</span>
+<span class="fc" id="L70">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
